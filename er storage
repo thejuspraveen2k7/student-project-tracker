@@ -1,0 +1,508 @@
+[1mdiff --git a/public/index.html b/public/index.html[m
+[1mindex 2d50ee0..59600fa 100644[m
+[1m--- a/public/index.html[m
+[1m+++ b/public/index.html[m
+[36m@@ -1,5 +1,52 @@[m
+[31m-<!doctype html>[m
+[32m+[m[32m<!-- START OF FILE public/index.html -->[m
+[32m+[m[32m<!DOCTYPE html>[m
+ <html lang="en">[m
+[31m-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Workshop readiness</title></head>[m
+[31m-<body><main><h1>Student Project Tracker</h1><p>Readiness check passed. We will build the interface in Session 1.</p></main></body>[m
+[32m+[m[32m<head>[m
+[32m+[m[32m  <meta charset="UTF-8">[m
+[32m+[m[32m  <meta name="viewport" content="width=device-width, initial-scale=1.0">[m
+[32m+[m[32m  <title>Student Project Tracker</title>[m
+[32m+[m[32m  <link rel="stylesheet" href="style.css">[m
+[32m+[m[32m  <script src="script.js" defer></script>[m
+[32m+[m[32m</head>[m
+[32m+[m[32m<body>[m
+[32m+[m[32m  <main>[m
+[32m+[m[32m    <header>[m
+[32m+[m[32m      <h1>Student Project Tracker</h1>[m
+[32m+[m[32m      <p>Track our electronics project ideas.</p>[m
+[32m+[m[32m    </header>[m
+[32m+[m
+[32m+[m[32m    <section aria-labelledby="form-title">[m
+[32m+[m[32m      <h2 id="form-title">Add Project</h2>[m
+[32m+[m[32m      <form id="project-form">[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          <label for="name">Project name</label>[m
+[32m+[m[32m          <input type="text" id="name" name="name" required maxlength="80">[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          <label for="status">Status</label>[m
+[32m+[m[32m          <select id="status" name="status">[m
+[32m+[m[32m            <option value="Planned">Planned</option>[m
+[32m+[m[32m            <option value="In Progress">In Progress</option>[m
+[32m+[m[32m            <option value="Completed">Completed</option>[m
+[32m+[m[32m          </select>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          <button id="save-button" type="submit">Add project</button>[m
+[32m+[m[32m          <button id="cancel-button" type="button" hidden>Cancel</button>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </form>[m
+[32m+[m[32m      <p id="message" role="status" aria-live="polite"></p>[m
+[32m+[m[32m    </section>[m
+[32m+[m
+[32m+[m[32m    <section aria-labelledby="list-title">[m
+[32m+[m[32m      <h2 id="list-title">Projects</h2>[m
+[32m+[m[32m      <p id="empty-state">No projects added yet.</p>[m
+[32m+[m[32m      <ul id="project-list"></ul>[m
+[32m+[m[32m    </section>[m
+[32m+[m[32m  </main>[m
+[32m+[m[32m</body>[m
+ </html>[m
+[32m+[m[32m<!-- END OF FILE public/index.html -->[m
+[41m+ [m
+\ No newline at end of file[m
+[1mdiff --git a/public/script.js b/public/script.js[m
+[1mindex 8b13789..b90d8cc 100644[m
+[1m--- a/public/script.js[m
+[1m+++ b/public/script.js[m
+[36m@@ -1 +1,268 @@[m
+[32m+[m[32m// START OF FILE public/script.js[m
+[32m+[m[32mconst STORAGE_KEY = 'workshop-projects-v1';[m
+[32m+[m[32mconst VALID_STATUSES = ['Planned', 'In Progress', 'Completed'];[m
+ [m
+[32m+[m[32mconst projectForm = document.getElementById('project-form');[m
+[32m+[m[32mconst formTitle = document.getElementById('form-title');[m
+[32m+[m[32mconst nameInput = document.getElementById('name');[m
+[32m+[m[32mconst statusSelect = document.getElementById('status');[m
+[32m+[m[32mconst saveButton = document.getElementById('save-button');[m
+[32m+[m[32mconst cancelButton = document.getElementById('cancel-button');[m
+[32m+[m[32mconst messageEl = document.getElementById('message');[m
+[32m+[m[32mconst emptyStateEl = document.getElementById('empty-state');[m
+[32m+[m[32mconst projectListEl = document.getElementById('project-list');[m
+[32m+[m
+[32m+[m[32mconst projects = [];[m
+[32m+[m[32mlet editingId = null;[m
+[32m+[m[32mlet nextId = 1;[m
+[32m+[m
+[32m+[m[32mfunction showMessage(text) {[m
+[32m+[m[32m  messageEl.textContent = text;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction isValidProjectRecord(item) {[m
+[32m+[m[32m  return ([m
+[32m+[m[32m    item !== null &&[m
+[32m+[m[32m    typeof item === 'object' &&[m
+[32m+[m[32m    (typeof item.id === 'number' || typeof item.id === 'string') &&[m
+[32m+[m[32m    String(item.id).trim() !== '' &&[m
+[32m+[m[32m    typeof item.name === 'string' &&[m
+[32m+[m[32m    item.name.trim().length > 0 &&[m
+[32m+[m[32m    item.name.trim().length <= 80 &&[m
+[32m+[m[32m    VALID_STATUSES.includes(item.status)[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction loadProjects() {[m
+[32m+[m[32m  let rawData = null;[m
+[32m+[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    rawData = window.localStorage.getItem(STORAGE_KEY);[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    showMessage('Could not read saved projects from browser storage.');[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  if (rawData === null) {[m
+[32m+[m[32m    // Key is absent: start with an empty array[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  let parsed;[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    parsed = JSON.parse(rawData);[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    // Malformed JSON: warn the user and do not overwrite stored data at startup[m
+[32m+[m[32m    showMessage([m
+[32m+[m[32m      'Saved project data in localStorage is corrupted and could not be loaded.'[m
+[32m+[m[32m    );[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  if (!Array.isArray(parsed) || !parsed.every(isValidProjectRecord)) {[m
+[32m+[m[32m    // Invalid structure: warn the user and do not overwrite stored data at startup[m
+[32m+[m[32m    showMessage([m
+[32m+[m[32m      'Saved project data has an invalid format and could not be restored.'[m
+[32m+[m[32m    );[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  projects.length = 0;[m
+[32m+[m[32m  let maxNumericId = 0;[m
+[32m+[m
+[32m+[m[32m  parsed.forEach((item) => {[m
+[32m+[m[32m    const cleanRecord = {[m
+[32m+[m[32m      id: item.id,[m
+[32m+[m[32m      name: item.name.trim(),[m
+[32m+[m[32m      status: item.status[m
+[32m+[m[32m    };[m
+[32m+[m[32m    projects.push(cleanRecord);[m
+[32m+[m
+[32m+[m[32m    const numericId = Number(item.id);[m
+[32m+[m[32m    if (Number.isInteger(numericId) && numericId > maxNumericId) {[m
+[32m+[m[32m      maxNumericId = numericId;[m
+[32m+[m[32m    }[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  nextId = maxNumericId + 1;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction saveProjects() {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const serialized = JSON.stringify(projects);[m
+[32m+[m[32m    window.localStorage.setItem(STORAGE_KEY, serialized);[m
+[32m+[m[32m    return true;[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    showMessage('Changes could not be saved to browser storage.');[m
+[32m+[m[32m    return false;[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction resetFormToAddMode() {[m
+[32m+[m[32m  editingId = null;[m
+[32m+[m[32m  projectForm.reset();[m
+[32m+[m[32m  statusSelect.value = 'Planned';[m
+[32m+[m[32m  formTitle.textContent = 'Add Project';[m
+[32m+[m[32m  saveButton.textContent = 'Add project';[m
+[32m+[m[32m  cancelButton.hidden = true;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction startEdit(id) {[m
+[32m+[m[32m  const project = projects.find((item) => item.id === id);[m
+[32m+[m[32m  if (!project) {[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  editingId = project.id;[m
+[32m+[m[32m  nameInput.value = project.name;[m
+[32m+[m[32m  statusSelect.value = project.status;[m
+[32m+[m[32m  formTitle.textContent = 'Edit Project';[m
+[32m+[m[32m  saveButton.textContent = 'Save changes';[m
+[32m+[m[32m  cancelButton.hidden = false;[m
+[32m+[m[32m  showMessage(`Editing "${project.name}".`);[m
+[32m+[m[32m  nameInput.focus();[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction deleteProject(id) {[m
+[32m+[m[32m  const index = projects.findIndex((item) => item.id === id);[m
+[32m+[m[32m  if (index === -1) {[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  const project = projects[index];[m
+[32m+[m[32m  const confirmed = window.confirm([m
+[32m+[m[32m    `Are you sure you want to delete "${project.name}" (${project.status})?`[m
+[32m+[m[32m  );[m
+[32m+[m
+[32m+[m[32m  if (!confirmed) {[m
+[32m+[m[32m    showMessage(`Deletion of "${project.name}" cancelled.`);[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  projects.splice(index, 1);[m
+[32m+[m
+[32m+[m[32m  if (editingId === id) {[m
+[32m+[m[32m    resetFormToAddMode();[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  renderProjects();[m
+[32m+[m[32m  if (saveProjects()) {[m
+[32m+[m[32m    showMessage(`Deleted "${project.name}".`);[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction renderProjects() {[m
+[32m+[m[32m  projectListEl.textContent = '';[m
+[32m+[m
+[32m+[m[32m  if (projects.length === 0) {[m
+[32m+[m[32m    emptyStateEl.hidden = false;[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  emptyStateEl.hidden = true;[m
+[32m+[m
+[32m+[m[32m  projects.forEach((project) => {[m
+[32m+[m[32m    const li = document.createElement('li');[m
+[32m+[m[32m    li.dataset.id = String(project.id);[m
+[32m+[m[32m    li.style.display = 'flex';[m
+[32m+[m[32m    li.style.justifyContent = 'space-between';[m
+[32m+[m[32m    li.style.alignItems = 'center';[m
+[32m+[m[32m    li.style.gap = '0.75rem';[m
+[32m+[m[32m    li.style.padding = '0.75rem 0';[m
+[32m+[m[32m    li.style.borderBottom = '1px solid #e2e8f0';[m
+[32m+[m
+[32m+[m[32m    const infoSpan = document.createElement('span');[m
+[32m+[m[32m    const nameStrong = document.createElement('strong');[m
+[32m+[m[32m    nameStrong.textContent = project.name;[m
+[32m+[m
+[32m+[m[32m    const statusText = document.createElement('span');[m
+[32m+[m[32m    statusText.textContent = ` — ${project.status}`;[m
+[32m+[m
+[32m+[m[32m    infoSpan.appendChild(nameStrong);[m
+[32m+[m[32m    infoSpan.appendChild(statusText);[m
+[32m+[m
+[32m+[m[32m    const actionsDiv = document.createElement('div');[m
+[32m+[m[32m    actionsDiv.style.display = 'flex';[m
+[32m+[m[32m    actionsDiv.style.gap = '0.5rem';[m
+[32m+[m
+[32m+[m[32m    const editButton = document.createElement('button');[m
+[32m+[m[32m    editButton.type = 'button';[m
+[32m+[m[32m    editButton.textContent = 'Edit';[m
+[32m+[m[32m    editButton.addEventListener('click', () => {[m
+[32m+[m[32m      startEdit(project.id);[m
+[32m+[m[32m    });[m
+[32m+[m
+[32m+[m[32m    const deleteButton = document.createElement('button');[m
+[32m+[m[32m    deleteButton.type = 'button';[m
+[32m+[m[32m    deleteButton.textContent = 'Delete';[m
+[32m+[m[32m    deleteButton.addEventListener('click', () => {[m
+[32m+[m[32m      deleteProject(project.id);[m
+[32m+[m[32m    });[m
+[32m+[m
+[32m+[m[32m    actionsDiv.appendChild(editButton);[m
+[32m+[m[32m    actionsDiv.appendChild(deleteButton);[m
+[32m+[m
+[32m+[m[32m    li.appendChild(infoSpan);[m
+[32m+[m[32m    li.appendChild(actionsDiv);[m
+[32m+[m[32m    projectListEl.appendChild(li);[m
+[32m+[m[32m  });[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mprojectForm.addEventListener('submit', (event) => {[m
+[32m+[m[32m  event.preventDefault();[m
+[32m+[m
+[32m+[m[32m  const trimmedName = nameInput.value.trim();[m
+[32m+[m[32m  const selectedStatus = statusSelect.value;[m
+[32m+[m
+[32m+[m[32m  if (!trimmedName) {[m
+[32m+[m[32m    showMessage('Please enter a non-empty project name.');[m
+[32m+[m[32m    nameInput.focus();[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  if (trimmedName.length > 80) {[m
+[32m+[m[32m    showMessage('Project name must be 80 characters or fewer.');[m
+[32m+[m[32m    nameInput.focus();[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  if (editingId === null) {[m
+[32m+[m[32m    // Create new project in Add mode[m
+[32m+[m[32m    const newProject = {[m
+[32m+[m[32m      id: nextId++,[m
+[32m+[m[32m      name: trimmedName,[m
+[32m+[m[32m      status: selectedStatus[m
+[32m+[m[32m    };[m
+[32m+[m[32m    projects.push(newProject);[m
+[32m+[m[32m    renderProjects();[m
+[32m+[m[32m    resetFormToAddMode();[m
+[32m+[m[32m    if (saveProjects()) {[m
+[32m+[m[32m      showMessage(`Added "${newProject.name}".`);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  } else {[m
+[32m+[m[32m    // Update existing project in Edit mode without creating a duplicate[m
+[32m+[m[32m    const projectToUpdate = projects.find((item) => item.id === editingId);[m
+[32m+[m[32m    if (projectToUpdate) {[m
+[32m+[m[32m      projectToUpdate.name = trimmedName;[m
+[32m+[m[32m      projectToUpdate.status = selectedStatus;[m
+[32m+[m[32m      renderProjects();[m
+[32m+[m[32m      resetFormToAddMode();[m
+[32m+[m[32m      if (saveProjects()) {[m
+[32m+[m[32m        showMessage(`Updated "${projectToUpdate.name}".`);[m
+[32m+[m[32m      }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      resetFormToAddMode();[m
+[32m+[m[32m      showMessage('Project could not be found.');[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32mcancelButton.addEventListener('click', () => {[m
+[32m+[m[32m  resetFormToAddMode();[m
+[32m+[m[32m  showMessage('Edit cancelled.');[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32m// Initial load from localStorage and render[m
+[32m+[m[32mloadProjects();[m
+[32m+[m[32mrenderProjects();[m
+[32m+[m[32m// END OF FILE public/script.js[m
+\ No newline at end of file[m
+[1mdiff --git a/public/style.css b/public/style.css[m
+[1mindex 8b13789..ff19335 100644[m
+[1m--- a/public/style.css[m
+[1m+++ b/public/style.css[m
+[36m@@ -1 +1,168 @@[m
+[32m+[m[32m/* START OF FILE public/style.css */[m
+[32m+[m[32m*,[m
+[32m+[m[32m*::before,[m
+[32m+[m[32m*::after {[m
+[32m+[m[32m  box-sizing: border-box;[m
+[32m+[m[32m}[m
+ [m
+[32m+[m[32mbody {[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m  padding: 2rem 1rem;[m
+[32m+[m[32m  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;[m
+[32m+[m[32m  line-height: 1.5;[m
+[32m+[m[32m  color: #1e293b;[m
+[32m+[m[32m  background-color: #f8fafc;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmain {[m
+[32m+[m[32m  max-width: 640px;[m
+[32m+[m[32m  margin: 0 auto;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mheader {[m
+[32m+[m[32m  margin-bottom: 1.75rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mheader h1 {[m
+[32m+[m[32m  margin: 0 0 0.35rem 0;[m
+[32m+[m[32m  font-size: 1.85rem;[m
+[32m+[m[32m  color: #0f172a;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mheader p {[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m  color: #475569;[m
+[32m+[m[32m  font-size: 1.05rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32msection {[m
+[32m+[m[32m  background-color: #ffffff;[m
+[32m+[m[32m  border: 1px solid #e2e8f0;[m
+[32m+[m[32m  border-radius: 8px;[m
+[32m+[m[32m  padding: 1.5rem;[m
+[32m+[m[32m  margin-bottom: 1.5rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32msection h2 {[m
+[32m+[m[32m  margin: 0 0 1.25rem 0;[m
+[32m+[m[32m  font-size: 1.25rem;[m
+[32m+[m[32m  color: #0f172a;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#project-form > div {[m
+[32m+[m[32m  margin-bottom: 1.15rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#project-form > div:last-child {[m
+[32m+[m[32m  margin-bottom: 0;[m
+[32m+[m[32m  display: flex;[m
+[32m+[m[32m  gap: 0.75rem;[m
+[32m+[m[32m  align-items: center;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mlabel {[m
+[32m+[m[32m  display: block;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m  margin-bottom: 0.4rem;[m
+[32m+[m[32m  color: #1e293b;[m
+[32m+[m[32m  font-size: 0.95rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32minput[type="text"],[m
+[32m+[m[32mselect {[m
+[32m+[m[32m  width: 100%;[m
+[32m+[m[32m  padding: 0.65rem 0.75rem;[m
+[32m+[m[32m  font: inherit;[m
+[32m+[m[32m  color: #0f172a;[m
+[32m+[m[32m  background-color: #ffffff;[m
+[32m+[m[32m  border: 1px solid #cbd5e1;[m
+[32m+[m[32m  border-radius: 6px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mbutton {[m
+[32m+[m[32m  font: inherit;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m  padding: 0.65rem 1.25rem;[m
+[32m+[m[32m  border-radius: 6px;[m
+[32m+[m[32m  border: 1px solid transparent;[m
+[32m+[m[32m  cursor: pointer;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#save-button {[m
+[32m+[m[32m  background-color: #2563eb;[m
+[32m+[m[32m  color: #ffffff;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#save-button:hover {[m
+[32m+[m[32m  background-color: #1d4ed8;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#cancel-button {[m
+[32m+[m[32m  background-color: #f1f5f9;[m
+[32m+[m[32m  color: #334155;[m
+[32m+[m[32m  border-color: #cbd5e1;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#cancel-button:hover {[m
+[32m+[m[32m  background-color: #e2e8f0;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Ensure the HTML hidden attribute is always respected */[m
+[32m+[m[32m[hidden] {[m
+[32m+[m[32m  display: none !important;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Visible keyboard focus outlines */[m
+[32m+[m[32minput[type="text"]:focus-visible,[m
+[32m+[m[32mselect:focus-visible,[m
+[32m+[m[32mbutton:focus-visible {[m
+[32m+[m[32m  outline: 3px solid #2563eb;[m
+[32m+[m[32m  outline-offset: 2px;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#message {[m
+[32m+[m[32m  margin: 0.75rem 0 0 0;[m
+[32m+[m[32m  font-size: 0.95rem;[m
+[32m+[m[32m  font-weight: 500;[m
+[32m+[m[32m  color: #0f172a;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#message:empty {[m
+[32m+[m[32m  display: none;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#empty-state {[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#project-list {[m
+[32m+[m[32m  list-style: none;[m
+[32m+[m[32m  padding: 0;[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Responsive rule for screens below 560px */[m
+[32m+[m[32m@media (max-width: 560px) {[m
+[32m+[m[32m  body {[m
+[32m+[m[32m    padding: 1rem 0.75rem;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  section {[m
+[32m+[m[32m    padding: 1.15rem;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  header h1 {[m
+[32m+[m[32m    font-size: 1.5rem;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  #project-form > div:last-child {[m
+[32m+[m[32m    flex-direction: column;[m
+[32m+[m[32m    align-items: stretch;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  button {[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m[32m/* END OF FILE public/style.css */[m

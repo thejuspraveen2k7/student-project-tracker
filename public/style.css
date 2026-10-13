@@ -1,1 +1,168 @@
+/* START OF FILE public/style.css */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  color: #1e293b;
+  background-color: #f8fafc;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+header {
+  margin-bottom: 1.75rem;
+}
+
+header h1 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.85rem;
+  color: #0f172a;
+}
+
+header p {
+  margin: 0;
+  color: #475569;
+  font-size: 1.05rem;
+}
+
+section {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+section h2 {
+  margin: 0 0 1.25rem 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+#project-form > div {
+  margin-bottom: 1.15rem;
+}
+
+#project-form > div:last-child {
+  margin-bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+#save-button {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+#save-button:hover {
+  background-color: #1d4ed8;
+}
+
+#cancel-button {
+  background-color: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+#cancel-button:hover {
+  background-color: #e2e8f0;
+}
+
+/* Ensure the HTML hidden attribute is always respected */
+[hidden] {
+  display: none !important;
+}
+
+/* Visible keyboard focus outlines */
+input[type="text"]:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+#message {
+  margin: 0.75rem 0 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+#message:empty {
+  display: none;
+}
+
+#empty-state {
+  margin: 0;
+  color: #64748b;
+}
+
+#project-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Responsive rule for screens below 560px */
+@media (max-width: 560px) {
+  body {
+    padding: 1rem 0.75rem;
+  }
+
+  section {
+    padding: 1.15rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  #project-form > div:last-child {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+/* END OF FILE public/style.css */

@@ -19,7 +19,7 @@ function showMessage(text) {
   messageEl.textContent = text;
 }
 
-function setProcessing(processing, messageText = '') {
+function setProcessing(processing) {
   isProcessing = processing;
   nameInput.disabled = processing;
   statusSelect.disabled = processing;
@@ -28,14 +28,13 @@ function setProcessing(processing, messageText = '') {
   
   const listButtons = projectListEl.querySelectorAll('button');
   listButtons.forEach(btn => btn.disabled = processing);
-
-  if (messageText) {
-    showMessage(messageText);
-  }
 }
 
-async function loadProjects(successMessage = '') {
-  setProcessing(true, successMessage ? successMessage : 'Loading projects...');
+async function loadProjects(customSuccessMessage = '') {
+  setProcessing(true);
+  if (!customSuccessMessage) {
+    showMessage('Loading projects...');
+  }
   
   try {
     const response = await fetch('/api/projects');
@@ -46,20 +45,19 @@ async function loadProjects(successMessage = '') {
         const errJson = await response.json();
         if (errJson.error) errorMsg = errJson.error;
       } catch (e) {}
-      
-      setProcessing(false, `API Error: ${errorMsg}`);
-      emptyStateEl.hidden = true;
-      projectListEl.textContent = '';
-      return;
+      throw new Error(`API Error: ${errorMsg}`);
     }
 
     projects = await response.json();
     renderProjects();
-    setProcessing(false, successMessage || 'Projects loaded.');
+    showMessage(customSuccessMessage || 'Projects loaded.');
   } catch (error) {
-    setProcessing(false, 'Network error: Could not connect to the server to load projects.');
-    emptyStateEl.hidden = true;
+    showMessage(error.message.startsWith('API') ? error.message : 'Network error: Could not connect to the server to load projects.');
+    projects = [];
     projectListEl.textContent = '';
+    emptyStateEl.hidden = true; // Do not pretend the list is deliberately empty on error
+  } finally {
+    setProcessing(false);
   }
 }
 
@@ -101,7 +99,8 @@ async function deleteProject(id) {
     return;
   }
 
-  setProcessing(true, 'Deleting project...');
+  setProcessing(true);
+  showMessage('Deleting project...');
 
   try {
     const response = await fetch(`/api/projects/${id}`, {
@@ -114,8 +113,7 @@ async function deleteProject(id) {
         const errJson = await response.json();
         if (errJson.error) errorMsg = errJson.error;
       } catch (e) {}
-      setProcessing(false, `API Error: ${errorMsg}`);
-      return;
+      throw new Error(`API Error: ${errorMsg}`);
     }
 
     if (editingId === id) {
@@ -124,7 +122,9 @@ async function deleteProject(id) {
 
     await loadProjects(`Deleted "${project.name}".`);
   } catch (error) {
-    setProcessing(false, 'Network error: Could not connect to the server to delete.');
+    showMessage(error.message.startsWith('API') ? error.message : 'Network error: Could not connect to the server to delete.');
+  } finally {
+    setProcessing(false);
   }
 }
 
@@ -204,7 +204,8 @@ projectForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  setProcessing(true, 'Saving project...');
+  setProcessing(true);
+  showMessage('Saving project...');
 
   const payload = {
     name: trimmedName,
@@ -237,17 +238,16 @@ projectForm.addEventListener('submit', async (event) => {
         const errJson = await response.json();
         if (errJson.error) errorMsg = errJson.error;
       } catch (e) {}
-      
-      setProcessing(false, `API Error: ${errorMsg}`);
-      return; 
+      throw new Error(`API Error: ${errorMsg}`);
     }
 
     const successMsg = editingId === null ? `Added "${trimmedName}".` : `Updated "${trimmedName}".`;
     resetFormToAddMode();
     await loadProjects(successMsg);
-
   } catch (error) {
-    setProcessing(false, 'Network error: Could not connect to the server to save.');
+    showMessage(error.message.startsWith('API') ? error.message : 'Network error: Could not connect to the server to save.');
+  } finally {
+    setProcessing(false);
   }
 });
 
